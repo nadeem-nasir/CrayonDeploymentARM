@@ -1,0 +1,90 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentStage": {
+      "type": "string"
+    },
+    "insightsResourceName": {
+      "type": "string"
+    },
+    "appserviceplanResourceName": {
+      "type": "string"
+    },
+    "appserviceResourceName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    
+  },
+  "resources": [
+    {
+      "name": "applicationinsightslinktemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2016-09-01",
+      "dependsOn": [],
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "https://raw.githubusercontent.com/nadeem-nasir/CrayonDeploymentARM/master/template-applicationinsights.json",
+          "contentVersion": "1.0.0.0"
+
+        },
+        "parameters": {
+          "resourceName": {
+            "value": "[parameters('insightsResourceName')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "appserviceplanlinktemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2016-09-01",
+      "dependsOn": [],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "https://raw.githubusercontent.com/nadeem-nasir/CrayonDeploymentARM/master/template-appserviceplan-windows.json",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "resourceName": {
+            "value": "[parameters('appserviceplanResourceName')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "appservicelinktemplate",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2016-09-01",
+      "dependsOn": [ "applicationinsightslinktemplate", "appserviceplanlinktemplate" ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "https://raw.githubusercontent.com/nadeem-nasir/CrayonDeploymentARM/master/template-service.json",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "environmentStage": {
+            "value": "[parameters('environmentStage')]"
+          },
+          "applicationInsightsKey": {
+            "value": "[reference('applicationinsightslinktemplate').outputs.appInsightsInstrumentationKey.value]"
+          },
+          "resourceName": {
+            "value": "[parameters('appserviceResourceName')]"
+          },
+          "planId": {
+            "value": "[reference('appserviceplanlinktemplate').outputs.resourceId.value]"
+          }
+        }
+      }
+    }
+  ]
+}  
